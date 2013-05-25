@@ -1,12 +1,13 @@
 from __future__ import unicode_literals
 from flask import Response
+from repoze.lru import lru_cache
 import sh
 
 from app import app
 
 
-@app.route("/youtube/<string:key>.mp3")
-def youtube_audio_invert(key):
+@lru_cache(maxsize=500)
+def inverted_filename(key):
     filename = key + ".flv"
     mp3 = key + ".mp3"
     inverted_filename = key + "_inverted.mp3"
@@ -27,4 +28,9 @@ def youtube_audio_invert(key):
     sox_output = sox(mp3, inverted_filename, "remix", "1,2i")
     app.logger.info(sox_output)
 
-    return Response(open(inverted_filename, "rb"), content_type="audio/mpeg")
+    return inverted_filename
+
+
+@app.route("/youtube/<string:key>.mp3")
+def youtube_audio_invert(key):
+    return Response(open(inverted_filename(key), "rb"), content_type="audio/mpeg")
